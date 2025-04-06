@@ -81,30 +81,34 @@ class LLMClassifier:
         # Create prompt template
         self.prompt = ChatPromptTemplate.from_messages([
             ("system", """You are a document classification assistant. Your task is to analyze text 
-             from a PDF and determine:
-1. If this text represents the end of a document
-2. What type of document it is
+             from a number of documents which have been scanned together and determine:
+1. The boundaries of the document(s) you find
+2. What type of document each is
 3. How confident you are in your classification (0-1)
-4. A suggested filename for the document
+4. A suggested filename for the document(s)
 
 Available document types:
 {categories}
 
-Respond with a JSON object containing:
+Respond with a JSON array. Each array element should be an object with:
 - document_type: The type of document (must be one of the available types)
-- is_boundary: true if this text represents the end of a document, false otherwise
 - confidence: A number between 0 and 1 indicating your confidence in the classification
-- boundary_page: The page number where the document ends (only if is_boundary is true)
-- suggested_filename: A suggested filename for the document (only if is_boundary is true)
+- page_start: The page number where the document starts
+- page_end: The page number where the document ends
+- suggested_filename: A suggested filename for the document. Please add the most relevant date if you find one
+
+For documents that don't seem complete, you can ignore them - we'll pass in more text for the next time around.
+Your text will be loaded using Python's json.loads function so please ensure the output is bare json.
 
 Example response:
+[
 {{
     "document_type": "Will",
-    "is_boundary": true,
     "confidence": 0.95,
-    "boundary_page": 5,
-    "suggested_filename": "will_5.pdf"
-}}"""),
+    "page_start": 5,
+    "page_end": 6,
+    "suggested_filename": "will_glenn_meacham.pdf"
+}}]"""),
             ("user", "Text to analyze:\n{text}")
         ])
         

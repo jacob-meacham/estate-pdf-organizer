@@ -12,49 +12,57 @@ A tool for organizing estate documents using LLMs to detect document boundaries 
 
 ## Installation
 
-First, install `uv`:
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
+1. Install [uv](https://github.com/astral-sh/uv) if you haven't already:
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
 
-Then install the package:
-```bash
-uv pip install estate-pdf-organizer
-```
+2. Clone this repository and install dependencies:
+   ```bash
+   git clone https://github.com/yourusername/estate-pdf-organizer.git
+   cd estate-pdf-organizer
+   uv venv
+   uv pip install -e .
+   ```
+
+3. Install Tesseract OCR:
+   - On macOS: `brew install tesseract`
+   - On Ubuntu/Debian: `sudo apt-get install tesseract-ocr`
+   - On Windows: Download and install from https://github.com/UB-Mannheim/tesseract/wiki
 
 ## Usage
 
-### Command Line Interface
+1. Create a taxonomy file (YAML) defining your document types and their characteristics.
+2. Run the organizer:
+   ```bash
+   estate-pdf-organizer input_dir output_dir --taxonomy taxonomy.yaml
+   ```
 
-The tool provides a command-line interface for processing PDFs:
+### Command Line Options
 
-```bash
-estate-pdf-organizer input_directory output_directory taxonomy.yaml [options]
-```
-
-#### Required Arguments:
-- `input_directory`: Directory containing input PDFs
-- `output_directory`: Directory to store organized documents
-- `taxonomy.yaml`: Path to YAML file containing document taxonomy
-
-#### Options:
-- `--openai-api-key`: OpenAI API key. If not provided, will use OPENAI_API_KEY environment variable.
+- `input_dir`: Directory containing input PDFs
+- `output_dir`: Directory to store organized documents
+- `--taxonomy`: Path to YAML file containing document taxonomy
+- `--openai-api-key`: OpenAI API key (or use OPENAI_API_KEY environment variable)
+- `--overwrite`: Overwrite existing files in output directory
 - `--dry-run`: Show what would be done without making changes
-- `--window-size`: Number of pages to analyze at once (default: 3)
+- `--window-size`: Number of pages to consider for document boundary detection (default: 5)
+- `--keep-blank-pages`: Keep blank pages in the PDFs (default: remove blank pages)
 
 ### Taxonomy File
 
 The taxonomy file defines the list of document categories. Example:
 
 ```yaml
-- Will
-- Trust
-- Power of Attorney
-- Deed
-- Financial Statement
-- Tax Return
-- Insurance Policy
-- Unorganized
+categories:
+   - Will
+   - Trust
+   - Power of Attorney
+   - Deed
+   - Financial Statement
+   - Tax Return
+   - Insurance Policy
+   - Unorganized
 ```
 
 The LLM will automatically classify documents based on their content, so no additional keywords or descriptions are needed.
@@ -73,36 +81,35 @@ estate-pdf-organizer ./input_pdfs ./organized taxonomy.yaml --dry-run
 
 ### Setup
 
-1. Clone the repository
-2. Install `uv` if you haven't already:
+1. Install development dependencies:
    ```bash
-   curl -LsSf https://astral.sh/uv/install.sh | sh
-   ```
-3. Create a virtual environment and install dependencies:
-   ```bash
-   cd estate-pdf-organizer
-   uv venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   uv pip install -e ".[test,lint]"
+   uv pip install -e ".[dev]"
    ```
 
-### Running Tests
+### Running Tests and Linting
 
-```bash
-pytest
-```
+The project uses `uv` for dependency management. Here are the commands for development:
 
-### Running the Linter
+1. Run tests:
+   ```bash
+   pytest
+   ```
 
-```bash
-ruff check .
-```
+2. Run linting:
+   ```bash
+   ruff check .
+   ```
 
-To automatically fix linting issues:
-```bash
-ruff check --fix .
-```
+### Project Structure
+
+- `src/estate_pdf_organizer/`: Main package code
+  - `classifier.py`: Document classification using LLMs
+  - `organizer.py`: Document organization and file management
+  - `processor.py`: PDF processing and text extraction
+  - `cli.py`: Command line interface
+- `tests/`: Test files
+- `pyproject.toml`: Project configuration and dependencies
 
 ## License
 
-MIT 
+MIT License 

@@ -4,8 +4,7 @@ import argparse
 import os
 from pathlib import Path
 
-from estate_pdf_organizer.classifier import LLMClassifier
-
+from .classifier import LLMClassifier
 from .processor import EstatePDFProcessor
 
 
