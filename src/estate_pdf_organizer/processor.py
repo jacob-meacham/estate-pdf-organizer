@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
 
 from .classifier import DocumentClassifier
 from .organizer import DocumentOrganizer
@@ -29,6 +29,40 @@ def read_pdf(pdf_path: Path) -> tuple[PdfReader, int]:
         return reader, len(reader.pages)
     except Exception as err:
         raise ValueError(f"Error reading PDF {pdf_path}: {err!s}") from err
+
+def remove_blank_pages(pdf_path: Path) -> tuple[Path, list[int]]:
+    """Remove blank pages from a PDF file.
+    
+    A page is considered blank if it has no text content and no images.
+    
+    Args:
+        pdf_path: Path to the PDF file
+        
+    Returns:
+        Tuple of (Path to new PDF with blank pages removed, list of removed page numbers)
+    """
+    reader = PdfReader(pdf_path)
+    writer = PdfWriter()
+    removed_pages = []
+    
+    for i, page in enumerate(reader.pages, 1):
+        # Extract text and check if page has any content
+        text = page.extract_text()
+        images = page.images
+        
+        if not text.strip() and not images:
+            removed_pages.append(i)
+        else:
+            writer.add_page(page)
+    
+    if removed_pages:
+        # Create new PDF without blank pages
+        new_pdf_path = pdf_path.parent / f"{pdf_path.stem}_no_blank{pdf_path.suffix}"
+        with open(new_pdf_path, 'wb') as output_file:
+            writer.write(output_file)
+        return new_pdf_path, removed_pages
+    
+    return pdf_path, []
 
 def extract_text_from_pages(reader: PdfReader, start_page: int, end_page: int) -> str:
     """Extract text from a range of pages in a PDF.
@@ -65,7 +99,7 @@ class EstatePDFProcessor:
         overwrite: bool = False,
         dry_run: bool = False,
         window_size: int = 10,
-        
+        remove_blank_pages: bool = True,
     ):
         """Initialize the processor.
         
@@ -76,12 +110,14 @@ class EstatePDFProcessor:
             overwrite: Whether to overwrite existing files
             dry_run: If True, only show what would be done without making changes
             window_size: Number of pages to consider for document boundary detection
+            remove_blank_pages: Whether to remove blank pages before processing
         """
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.overwrite = overwrite
         self.dry_run = dry_run
         self.window_size = window_size
+        self.remove_blank_pages = remove_blank_pages
         
         # Initialize components
         self.classifier = classifier
@@ -107,6 +143,12 @@ class EstatePDFProcessor:
         Args:
             pdf_path: Path to the PDF file to process
         """
+        # Remove blank pages if enabled
+        if self.remove_blank_pages:
+            pdf_path, removed_pages = remove_blank_pages(pdf_path)
+            if removed_pages:
+                print(f"  Removed {len(removed_pages)} blank pages: {removed_pages}")
+        
         # Open the PDF
         reader, total_pages = read_pdf(pdf_path)
         

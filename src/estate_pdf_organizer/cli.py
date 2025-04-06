@@ -59,6 +59,12 @@ def main():
         help="Number of pages to consider for document boundary detection (default: 5)"
     )
     
+    parser.add_argument(
+        "--keep-blank-pages",
+        action="store_true",
+        help="Keep blank pages in the PDFs (default: remove blank pages)"
+    )
+    
     args = parser.parse_args()
     
     # Get OpenAI API key from argument or environment variable
@@ -80,7 +86,8 @@ def main():
         classifier=classifier,
         overwrite=args.overwrite,
         dry_run=args.dry_run,
-        window_size=args.window_size
+        window_size=args.window_size,
+        remove_blank_pages=not args.keep_blank_pages
     )
     
     # Process the PDFs
