@@ -1,73 +1,108 @@
 # Estate PDF Organizer
 
-A tool for processing and organizing estate documents using LLMs. This tool helps estate executors manage large collections of scanned documents by automatically classifying and organizing them based on their content.
+A tool for organizing estate documents using LLMs to detect document boundaries and classify them.
 
 ## Features
 
-- Process multiple PDFs containing scanned documents
-- Automatic document boundary detection
-- LLM-powered document classification
-- Dry-run mode for previewing changes
-- Detailed logging and metadata tracking
-- YAML-based configuration and taxonomy
+- Detects document boundaries within PDFs using LLMs
+- Classifies documents into categories based on a configurable taxonomy
+- Organizes documents into category-specific directories
+- Supports dry-run mode for previewing changes
+- Handles multiple documents within a single PDF
 
 ## Installation
 
+First, install `uv`:
 ```bash
-pip install -e .
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Then install the package:
+```bash
+uv pip install estate-pdf-organizer
 ```
 
 ## Usage
 
-1. Create a taxonomy file (e.g., `taxonomy.yaml`):
-```yaml
-categories:
-  - Important Documents
-  - Financial
-  - Property
-  - Unorganized
-```
+### Command Line Interface
 
-2. Process documents:
+The tool provides a command-line interface for processing PDFs:
+
 ```bash
-# Dry run to preview changes
-estate-pdf-organizer process --input-dir ./scanned_docs --taxonomy ./taxonomy.yaml --dry-run
-
-# Process documents for real
-estate-pdf-organizer process --input-dir ./scanned_docs --taxonomy ./taxonomy.yaml --output-dir ./organized_docs
+estate-pdf-organizer input_directory output_directory taxonomy.yaml [options]
 ```
 
-## Configuration
+#### Required Arguments:
+- `input_directory`: Directory containing input PDFs
+- `output_directory`: Directory to store organized documents
+- `taxonomy.yaml`: Path to YAML file containing document taxonomy
 
-Configuration can be provided via command line arguments or a config file. See `estate-pdf-organizer --help` for details.
+#### Options:
+- `--openai-api-key`: OpenAI API key. If not provided, will use OPENAI_API_KEY environment variable.
+- `--dry-run`: Show what would be done without making changes
+- `--window-size`: Number of pages to analyze at once (default: 3)
+
+### Taxonomy File
+
+The taxonomy file defines the list of document categories. Example:
+
+```yaml
+- Will
+- Trust
+- Power of Attorney
+- Deed
+- Financial Statement
+- Tax Return
+- Insurance Policy
+- Unorganized
+```
+
+The LLM will automatically classify documents based on their content, so no additional keywords or descriptions are needed.
+
+### Example
+
+```bash
+# Set OpenAI API key
+export OPENAI_API_KEY=your-api-key
+
+# Run the organizer
+estate-pdf-organizer ./input_pdfs ./organized taxonomy.yaml --dry-run
+```
 
 ## Development
 
-```bash
-# Install development dependencies
-pip install -e ".[dev]"
+### Setup
 
-# Run tests
+1. Clone the repository
+2. Install `uv` if you haven't already:
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+3. Create a virtual environment and install dependencies:
+   ```bash
+   cd estate-pdf-organizer
+   uv venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   uv pip install -e ".[test,lint]"
+   ```
+
+### Running Tests
+
+```bash
 pytest
 ```
 
-## Project Structure
+### Running the Linter
 
+```bash
+ruff check .
 ```
-estate_pdf_organizer/
-├── src/
-│   ├── __init__.py
-│   ├── cli.py              # CLI interface
-│   ├── config.py           # Configuration management
-│   ├── pdf_processor.py    # PDF handling
-│   ├── classifier.py       # Document classification
-│   ├── organizer.py        # File organization
-│   └── utils.py            # Utility functions
-├── tests/
-│   ├── __init__.py
-│   ├── test_pdf_processor.py
-│   ├── test_classifier.py
-│   └── test_organizer.py
-├── pyproject.toml
-└── README.md
-``` 
+
+To automatically fix linting issues:
+```bash
+ruff check --fix .
+```
+
+## License
+
+MIT 

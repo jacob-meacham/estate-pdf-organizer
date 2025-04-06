@@ -1,3 +1,3 @@
-"""Estate PDF Organizer - A tool for processing and organizing estate documents using LLMs."""
+"""Estate PDF Organizer - Process and organize estate documents using LLMs."""
 
 __version__ = "0.1.0" 

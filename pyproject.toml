@@ -1,26 +1,67 @@
 [project]
 name = "estate-pdf-organizer"
 version = "0.1.0"
-description = "A tool for processing and organizing estate documents using LLMs"
+description = "Organize estate documents using LLMs"
 authors = [
-    {name = "Jacob", email = "jacob@example.com"}
+    {name = "Jacob", email = "jacob.e.meacham@gmail.com"},
 ]
 dependencies = [
-    "click>=8.1.0",
-    "pdfplumber>=0.10.0",
-    "pypdf>=3.17.0",
-    "langchain>=0.1.0",
-    "pyyaml>=6.0.0",
-    "tqdm>=4.65.0",
-    "loguru>=0.7.0",
-    "pytest>=7.4.0",
+    "click>=8.1.7",
+    "pypdf>=4.0.1",
+    "pyyaml>=6.0.1",
+    "loguru>=0.7.2",
+    "langchain>=0.1.9",
+    "langchain-core>=0.1.18",
+    "langchain-openai>=0.0.7",
+    "openai>=1.12.0",
+    "reportlab>=4.0.0"
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
+readme = "README.md"
+license = {text = "MIT"}
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0.0",
+]
+lint = [
+    "ruff>=0.3.0",
+]
+
+[project.scripts]
+estate-pdf-organizer = "estate_pdf_organizer.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"] 
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".pytest_cache",
+    "build",
+    "dist",
+    "*.egg-info",
+    "tests/*"
+]
+
+# Same as Black.
+line-length = 100
+
+# Assume Python 3.10
+target-version = "py310"
+
+[tool.ruff.lint]
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+fixable = ["ALL"]
+ignore = []
+select = ["E", "F", "B", "I", "N", "UP", "PL", "RUF"]
+unfixable = []
+
+[tool.ruff.lint.pylint]
+max-args = 10
+
+[tool.ruff.lint.isort]
+known-first-party = ["estate_pdf_organizer"] 
