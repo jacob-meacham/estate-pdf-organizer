@@ -183,49 +183,22 @@ class EstatePDFProcessor:
             window_text = extract_text_from_pages(images, current_page, window_end)
             
             # Classify the window to find document boundaries and types
-            classification = self.classifier.classify(window_text)
-            
-            # If we found a document boundary, extract and organize it
-            if classification.is_boundary:
-                # Use the boundary page from the classification
-                document_end = classification.boundary_page
-                
-                # Only process if this is a new boundary
-                if document_end > last_boundary:
-                    # Organize the document
-                    self.organizer.organize_document(
-                        pdf_reader=reader,
-                        source_pdf_path=str(pdf_path),
-                        start_page=current_page,
-                        end_page=document_end,
-                        document_type=classification.document_type,
-                        dry_run=self.dry_run,
-                        suggested_filename=classification.suggested_filename
-                    )
-                    
-                    msg = f"  Found {classification.document_type}"
-                    msg += f" (pages {current_page}-{document_end})"
-                    print(msg)
-                    
-                    # Update tracking variables
-                    last_boundary = document_end
-                    current_page = document_end + 1
-                else:
-                    # Skip this boundary as we've already processed it
-                    current_page += 1
-            else:
-                # If we're at the end of the PDF and haven't found a boundary,
-                # treat the remaining pages as a document
-                if current_page == total_pages and last_boundary < total_pages:
-                    self.organizer.organize_document(
-                        pdf_reader=reader,
-                        source_pdf_path=str(pdf_path),
-                        start_page=last_boundary + 1,
-                        end_page=total_pages,
-                        document_type="Unorganized",
-                        dry_run=self.dry_run
-                    )
-                    print(f"  Found Unorganized document (pages {last_boundary + 1}-{total_pages})")
-                # Move to the next page if no boundary found
-                current_page += 1
-    
+            classifications = self.classifier.classify(window_text)
+
+            for c in classifications:
+                # Organize the document
+                self.organizer.organize_document(
+                    pdf_reader=reader,
+                    source_pdf_path=str(pdf_path),
+                    start_page=c.page_start,
+                    end_page=c.page_end,
+                    document_type=c.document_type,
+                    dry_run=self.dry_run,
+                    suggested_filename=c.suggested_filename
+                )
+
+                msg = f"  Found {c.document_type}"
+                msg += f" (pages {c.page_start}-{c.page_end})"
+                print(msg)
+
+                current_page = c.page_end + 1

@@ -18,27 +18,25 @@ class ClassificationResult:
     def __init__(
         self,
         document_type: str,
-        is_boundary: bool,
         confidence: float,
-        boundary_page: int | None = None,
+        page_start: int,
+        page_end: int,
         suggested_filename: str | None = None
     ):
         self.document_type = document_type
-        self.is_boundary = is_boundary
         self.confidence = confidence
-        self.boundary_page = boundary_page
+        self.page_start = page_start
+        self.page_end = page_end
         self.suggested_filename = suggested_filename
         
         if not 0 <= confidence <= 1:
             raise ValueError("Confidence must be between 0 and 1")
-        if is_boundary and boundary_page is None:
-            raise ValueError("Boundary page must be specified when is_boundary is True")
 
 class DocumentClassifier(ABC):
     """Abstract base class for document classifiers."""
     
     @abstractmethod
-    def classify(self, text: str) -> ClassificationResult:
+    def classify(self, text: str) -> [ClassificationResult]:
         """Classify a document based on its text content.
         
         Args:
@@ -115,7 +113,7 @@ Example response:
         # Initialize output parser
         self.parser = JsonOutputParser()
     
-    def classify(self, text: str) -> ClassificationResult:
+    def classify(self, text: str) -> [ClassificationResult]:
         """Classify a document.
         
         Args:
@@ -140,19 +138,20 @@ Example response:
         response = self.llm.invoke(formatted_prompt)
         
         try:
-            result = json.loads(response.content)
-            
-            # Validate document type
-            if result["document_type"] not in self.categories:
-                raise ValueError(f"Invalid document type: {result['document_type']}")
-            
-            return ClassificationResult(
-                document_type=result["document_type"],
-                is_boundary=result["is_boundary"],
-                confidence=float(result["confidence"]),
-                boundary_page=result.get("boundary_page"),
-                suggested_filename=result.get("suggested_filename")
-            )
+            result = json.loads(response.content.replace('```json', '').replace('```', ''))
+
+            classification_results = []
+            for r in result:
+                if r["document_type"] not in self.categories:
+                    raise ValueError(f"Invalid document type: {r['document_type']}")
+
+                classification_results.append(ClassificationResult(
+                    document_type=r["document_type"],
+                    confidence=float(r["confidence"]),
+                    page_start=r["page_start"],
+                    page_end=r["page_end"],
+                    suggested_filename=r.get("suggested_filename")
+                ))
             
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON response from LLM: {e}") from e
