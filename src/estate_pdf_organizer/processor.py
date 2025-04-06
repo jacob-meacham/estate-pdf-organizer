@@ -173,7 +173,7 @@ class EstatePDFProcessor:
         
         # Process the PDF in windows to find document boundaries
         current_page = 1
-        last_boundary = 0  # Track the last boundary we found
+        processed_pages = set()  # Track which pages have been processed
         
         while current_page <= total_pages:
             # Calculate window end page
@@ -184,8 +184,22 @@ class EstatePDFProcessor:
             
             # Classify the window to find document boundaries and types
             classifications = self.classifier.classify(window_text)
-
+            
+            if not classifications:
+                # No documents found in this window, move to next window
+                current_page = current_page + 1
+                continue
+            
+            # Sort classifications by start page to process them in order
+            classifications.sort(key=lambda x: x.page_start)
+            
+            # Process each classification
             for c in classifications:
+                # Skip if we've already processed any pages in this range
+                if any(page in processed_pages for page in range(c.page_start, c.page_end + 1)):
+                    print(f"  Skipping overlapping document: {c.document_type} (pages {c.page_start}-{c.page_end})")
+                    continue
+                
                 # Organize the document
                 self.organizer.organize_document(
                     pdf_reader=reader,
@@ -196,9 +210,15 @@ class EstatePDFProcessor:
                     dry_run=self.dry_run,
                     suggested_filename=c.suggested_filename
                 )
-
+                
+                # Mark pages as processed
+                processed_pages.update(range(c.page_start, c.page_end + 1))
+                
                 msg = f"  Found {c.document_type}"
                 msg += f" (pages {c.page_start}-{c.page_end})"
+                if c.suggested_filename:
+                    msg += f" -> {c.suggested_filename}"
                 print(msg)
-
-                current_page = c.page_end + 1
+            
+            # Move to the next unprocessed page
+            current_page = max(processed_pages) + 1 if processed_pages else window_end + 1

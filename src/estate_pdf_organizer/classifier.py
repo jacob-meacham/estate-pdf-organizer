@@ -152,6 +152,7 @@ Example response:
                     page_end=r["page_end"],
                     suggested_filename=r.get("suggested_filename")
                 ))
+            return classification_results
             
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid JSON response from LLM: {e}") from e
