@@ -1,15 +1,21 @@
 """Main processor module for the Estate PDF Organizer."""
 
-import io
+import logging
 from pathlib import Path
 
 import pytesseract
 from pdf2image import convert_from_path
-from pypdf import PdfReader, PdfWriter
+from pypdf import PdfReader
 
 from .classifier import DocumentClassifier
 from .organizer import DocumentOrganizer
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 def read_pdf(pdf_path: Path) -> tuple[PdfReader, int, list]:
     """Read a PDF file and return its reader, page count, and page images.
@@ -48,40 +54,6 @@ def extract_text_from_page(page_image) -> str:
     custom_config = r'--oem 3 --psm 6 -l eng'
     return pytesseract.image_to_string(page_image, config=custom_config)
 
-def remove_blank_pages(reader: PdfReader, images: list) -> tuple[PdfReader, list, list[int]]:
-    """Remove blank pages from a PDF in memory.
-    
-    A page is considered blank if it has no text content after OCR.
-    
-    Args:
-        reader: PdfReader instance
-        images: List of page images
-        
-    Returns:
-        Tuple of (new PdfReader, new images list, list of removed page numbers)
-    """
-    writer = PdfWriter()
-    new_images = []
-    removed_pages = []
-    
-    for i, (page, image) in enumerate(zip(reader.pages, images, strict=False), 1):
-        # Extract text using OCR
-        text = extract_text_from_page(image)
-        
-        if not text.strip():
-            removed_pages.append(i)
-        else:
-            writer.add_page(page)
-            new_images.append(image)
-    
-    # Create a new PdfReader from the writer's content
-    output = io.BytesIO()
-    writer.write(output)
-    output.seek(0)
-    new_reader = PdfReader(output)
-    
-    return new_reader, new_images, removed_pages
-
 def extract_text_from_pages(images: list, start_page: int, end_page: int) -> str:
     """Extract text from a range of pages using OCR.
     
@@ -117,7 +89,6 @@ class EstatePDFProcessor:
         overwrite: bool = False,
         dry_run: bool = False,
         window_size: int = 10,
-        remove_blank_pages: bool = True,
     ):
         """Initialize the processor.
         
@@ -128,14 +99,12 @@ class EstatePDFProcessor:
             overwrite: Whether to overwrite existing files
             dry_run: If True, only show what would be done without making changes
             window_size: Number of pages to consider for document boundary detection
-            remove_blank_pages: Whether to remove blank pages before processing
         """
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.overwrite = overwrite
         self.dry_run = dry_run
         self.window_size = window_size
-        self.remove_blank_pages = remove_blank_pages
         
         # Initialize components
         self.classifier = classifier
@@ -147,7 +116,7 @@ class EstatePDFProcessor:
         pdf_files = list(self.input_dir.glob("*.pdf"))
         
         for pdf_path in pdf_files:
-            print(f"\nProcessing {pdf_path.name}...")
+            logger.info(f"Processing {pdf_path.name}...")
             self.process_pdf(pdf_path)
             
         # Save all metadata
@@ -163,13 +132,6 @@ class EstatePDFProcessor:
         """
         # Read PDF and convert to images
         reader, total_pages, images = read_pdf(pdf_path)
-        
-        # Remove blank pages if enabled
-        if self.remove_blank_pages:
-            reader, images, removed_pages = remove_blank_pages(reader, images)
-            if removed_pages:
-                print(f"  Removed {len(removed_pages)} blank pages: {removed_pages}")
-            total_pages = len(reader.pages)
         
         # Process the PDF in windows to find document boundaries
         current_page = 1
@@ -197,7 +159,7 @@ class EstatePDFProcessor:
             for c in classifications:
                 # Skip if we've already processed any pages in this range
                 if any(page in processed_pages for page in range(c.page_start, c.page_end + 1)):
-                    print(f"  Skipping overlapping document: {c.document_type} (pages {c.page_start}-{c.page_end})")
+                    logger.warning(f"Skipping overlapping document: {c.document_type} (pages {c.page_start}-{c.page_end})")
                     continue
                 
                 # Organize the document
@@ -214,11 +176,18 @@ class EstatePDFProcessor:
                 # Mark pages as processed
                 processed_pages.update(range(c.page_start, c.page_end + 1))
                 
-                msg = f"  Found {c.document_type}"
+                msg = f"Found {c.document_type}"
                 msg += f" (pages {c.page_start}-{c.page_end})"
                 if c.suggested_filename:
                     msg += f" -> {c.suggested_filename}"
-                print(msg)
+                logger.info(msg)
             
             # Move to the next unprocessed page
             current_page = max(processed_pages) + 1 if processed_pages else window_end + 1
+        
+        # Log and track any unprocessed pages
+        all_pages = set(range(1, total_pages + 1))
+        unprocessed_pages = sorted(all_pages - processed_pages)
+        if unprocessed_pages:
+            logger.warning(f"Found {len(unprocessed_pages)} unprocessed pages in {pdf_path.name}: {unprocessed_pages}")
+            self.organizer.add_unprocessed_pages(str(pdf_path), unprocessed_pages)

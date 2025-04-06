@@ -32,6 +32,7 @@ class DocumentOrganizer:
         self.output_dir = output_dir
         self.overwrite = overwrite
         self.metadata = []
+        self.unprocessed_pages = {}  # Track unprocessed pages by source PDF
         
         # Create output directory if it doesn't exist
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -46,6 +47,15 @@ class DocumentOrganizer:
             metadata: Document metadata
         """
         self.metadata.append(metadata)
+    
+    def add_unprocessed_pages(self, source_pdf: str, pages: list[int]) -> None:
+        """Add unprocessed pages to the metadata.
+        
+        Args:
+            source_pdf: Path to the source PDF
+            pages: List of unprocessed page numbers
+        """
+        self.unprocessed_pages[source_pdf] = pages
     
     def organize_document(
         self,
@@ -130,17 +140,13 @@ class DocumentOrganizer:
         
         return doc_metadata
     
-    def save_metadata(self, output_path: Path | None = None) -> None:
-        """Save document metadata to YAML file.
+    def save_metadata(self, output_path: Path) -> None:
+        """Save metadata to a YAML file.
         
         Args:
-            output_path: Path to save metadata to. If None, saves to metadata.yaml
-                in output directory.
+            output_path: Path to save metadata file
         """
-        if output_path is None:
-            output_path = self.output_dir / "metadata.yaml"
-            
-        metadata_dict = {
+        metadata = {
             "documents": [
                 {
                     "source_pdf": doc.source_pdf,
@@ -152,8 +158,12 @@ class DocumentOrganizer:
                     "output_path": doc.output_path
                 }
                 for doc in self.metadata
-            ]
+            ],
+            "unprocessed_pages": {
+                source_pdf: pages
+                for source_pdf, pages in self.unprocessed_pages.items()
+            }
         }
         
         with open(output_path, 'w') as f:
-            yaml.dump(metadata_dict, f) 
+            yaml.dump(metadata, f, default_flow_style=False) 

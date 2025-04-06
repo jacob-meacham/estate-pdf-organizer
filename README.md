@@ -47,7 +47,6 @@ A tool for organizing estate documents using LLMs to detect document boundaries 
 - `--overwrite`: Overwrite existing files in output directory
 - `--dry-run`: Show what would be done without making changes
 - `--window-size`: Number of pages to consider for document boundary detection (default: 5)
-- `--keep-blank-pages`: Keep blank pages in the PDFs (default: remove blank pages)
 
 ### Taxonomy File
 
@@ -55,14 +54,14 @@ The taxonomy file defines the list of document categories. Example:
 
 ```yaml
 categories:
-   - Will
-   - Trust
-   - Power of Attorney
-   - Deed
-   - Financial Statement
-   - Tax Return
-   - Insurance Policy
-   - Unorganized
+  - Will
+  - Trust
+  - Deed
+  - Power of Attorney
+  - Financial Statement
+  - Tax Return
+  - Insurance Policy
+  - Other
 ```
 
 The LLM will automatically classify documents based on their content, so no additional keywords or descriptions are needed.
