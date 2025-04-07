@@ -252,21 +252,7 @@ def test_organize_document_with_existing_output():
             
             organizer = DocumentOrganizer(Path(output_dir))
             
-            # Test without overwrite
-            try:
-                organizer.organize_document(
-                    pdf_reader=pdf_reader,
-                    source_pdf_path=str(pdf_path),
-                    start_page=1,
-                    end_page=3,
-                    document_type=document_type
-                )
-                assert False, "Expected ValueError for existing output file"
-            except ValueError:
-                pass
-            
-            # Test with overwrite
-            organizer = DocumentOrganizer(Path(output_dir), overwrite=True)
+            # Test with existing file - should create a new file with _1 suffix
             result = organizer.organize_document(
                 pdf_reader=pdf_reader,
                 source_pdf_path=str(pdf_path),
@@ -275,8 +261,13 @@ def test_organize_document_with_existing_output():
                 document_type=document_type
             )
             
-            # Verify file was overwritten
+            # Verify both files exist
+            assert output_path.exists()
             assert Path(result.output_path).exists()
+            assert result.output_path != str(output_path)
+            assert result.filename == "test_pages_1-3_1.pdf"
+            
+            # Verify PDF content
             with open(result.output_path, 'rb') as f:
                 output_reader = PdfReader(f)
                 assert len(output_reader.pages) == 3

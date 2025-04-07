@@ -185,9 +185,32 @@ class EstatePDFProcessor:
             # Move to the next unprocessed page
             current_page = max(processed_pages) + 1 if processed_pages else window_end + 1
         
-        # Log and track any unprocessed pages
+        # Handle any unprocessed pages
         all_pages = set(range(1, total_pages + 1))
         unprocessed_pages = sorted(all_pages - processed_pages)
         if unprocessed_pages:
             logger.warning(f"Found {len(unprocessed_pages)} unprocessed pages in {pdf_path.name}: {unprocessed_pages}")  # noqa: E501
             self.organizer.add_unprocessed_pages(str(pdf_path), unprocessed_pages)
+            
+            # Group consecutive unprocessed pages
+            groups = []
+            current_group = [unprocessed_pages[0]]
+            for page in unprocessed_pages[1:]:
+                if page == current_group[-1] + 1:
+                    current_group.append(page)
+                else:
+                    groups.append(current_group)
+                    current_group = [page]
+            groups.append(current_group)
+            
+            # Create unorganized documents for each group
+            for group in groups:
+                self.organizer.organize_document(
+                    pdf_reader=reader,
+                    source_pdf_path=str(pdf_path),
+                    start_page=group[0],
+                    end_page=group[-1],
+                    document_type="Unorganized",
+                    dry_run=self.dry_run,
+                    suggested_filename=f"unorganized_pages_{group[0]}-{group[-1]}.pdf"
+                )

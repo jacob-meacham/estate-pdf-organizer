@@ -45,15 +45,18 @@ class MockClassifier:
                 page_end=next_boundary - 1,
                 suggested_filename=f"will_{current_page}.pdf"
             )]
-        else:
-            # For non-boundary pages, return a single page document
+        elif current_page == 1:
+            # Handle the initial pages (1-2)
             return [ClassificationResult(
                 document_type="Will",
                 confidence=0.95,
-                page_start=current_page,
-                page_end=current_page,
-                suggested_filename=f"will_{current_page}.pdf"
+                page_start=1,
+                page_end=2,
+                suggested_filename="will_1.pdf"
             )]
+        else:
+            # For non-boundary pages, return empty list
+            return []
 
 def create_test_taxonomy(taxonomy_path: Path) -> None:
     """Create a test taxonomy file.
@@ -193,5 +196,5 @@ def test_multiple_documents_per_window():
         # Verify that the correct number of documents were created
         will_files = list(Path(output_dir).glob("Will/*.pdf"))
         unorganized_files = list(Path(output_dir).glob("Unorganized/*.pdf"))
-        assert len(will_files) == 3  # Documents ending at pages 3, 5, and 7
+        assert len(will_files) == 4  # Documents ending at pages 1-2, 3, 5, and 7
         assert len(unorganized_files) == 1  # Remaining pages 8-10 
