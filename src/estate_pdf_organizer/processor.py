@@ -159,7 +159,7 @@ class EstatePDFProcessor:
             for c in classifications:
                 # Skip if we've already processed any pages in this range
                 if any(page in processed_pages for page in range(c.page_start, c.page_end + 1)):
-                    logger.warning(f"Skipping overlapping document: {c.document_type} (pages {c.page_start}-{c.page_end})")
+                    logger.warning(f"Skipping overlapping document: {c.document_type} (pages {c.page_start}-{c.page_end})")  # noqa: E501
                     continue
                 
                 # Organize the document
@@ -189,5 +189,5 @@ class EstatePDFProcessor:
         all_pages = set(range(1, total_pages + 1))
         unprocessed_pages = sorted(all_pages - processed_pages)
         if unprocessed_pages:
-            logger.warning(f"Found {len(unprocessed_pages)} unprocessed pages in {pdf_path.name}: {unprocessed_pages}")
+            logger.warning(f"Found {len(unprocessed_pages)} unprocessed pages in {pdf_path.name}: {unprocessed_pages}")  # noqa: E501
             self.organizer.add_unprocessed_pages(str(pdf_path), unprocessed_pages)

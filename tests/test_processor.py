@@ -28,55 +28,60 @@ class MockClassifier:
     def boundaries(self, value):
         self._boundaries = value
     
-    def classify(self, text: str) -> ClassificationResult:
+    def classify(self, text: str) -> [ClassificationResult]:
         """Mock classification that returns boundaries at specific pages."""
         # Extract the current page number from the text
         # The text format is "[PAGE N]\n..." for each page
         current_page = int(text.split('\n')[0].split(' ')[1].strip(']'))
         
-        # If we're at a boundary page, return a boundary
+        # If we're at a boundary page, return a document
         if current_page in self._boundaries:
-            return ClassificationResult(
+            # Find the next boundary or end of window
+            next_boundary = min([b for b in self._boundaries if b > current_page], default=current_page + 1)
+            return [ClassificationResult(
                 document_type="Will",
                 confidence=0.95,
-                is_boundary=True,
-                boundary_page=current_page,
+                page_start=current_page,
+                page_end=next_boundary - 1,
                 suggested_filename=f"will_{current_page}.pdf"
-            )
+            )]
         else:
-            return ClassificationResult(
+            # For non-boundary pages, return a single page document
+            return [ClassificationResult(
                 document_type="Will",
                 confidence=0.95,
-                is_boundary=False
-            )
+                page_start=current_page,
+                page_end=current_page,
+                suggested_filename=f"will_{current_page}.pdf"
+            )]
 
-def create_test_taxonomy(taxonomy_path: Path):
+def create_test_taxonomy(taxonomy_path: Path) -> None:
     """Create a test taxonomy file.
     
     Args:
-        taxonomy_path: Path where to create the taxonomy file
+        taxonomy_path: Path to create taxonomy file at
     """
     taxonomy = {
         "categories": [
             "Will",
             "Trust",
-            "Power of Attorney",
             "Deed",
+            "Power of Attorney",
             "Financial Statement",
             "Tax Return",
             "Insurance Policy",
-            "Unorganized"
+            "Other"
         ]
     }
     
     with open(taxonomy_path, 'w') as f:
         yaml.dump(taxonomy, f)
 
-def create_test_pdf(pdf_path: Path, num_pages: int = 10):
+def create_test_pdf(pdf_path: Path, num_pages: int) -> None:
     """Create a test PDF file with the specified number of pages.
     
     Args:
-        pdf_path: Path where to create the PDF file
+        pdf_path: Path to create PDF file at
         num_pages: Number of pages to create
     """
     from reportlab.lib.pagesizes import letter

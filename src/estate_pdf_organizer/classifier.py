@@ -36,7 +36,7 @@ class DocumentClassifier(ABC):
     """Abstract base class for document classifiers."""
     
     @abstractmethod
-    def classify(self, text: str) -> [ClassificationResult]:
+    def classify(self, text: str) -> list[ClassificationResult]:
         """Classify a document based on its text content.
         
         Args:
@@ -93,10 +93,8 @@ Respond with a JSON array. Each array element should be an object with:
 - confidence: A number between 0 and 1 indicating your confidence in the classification
 - page_start: The page number where the document starts
 - page_end: The page number where the document ends
-- suggested_filename: A suggested filename for the document. Please add the most relevant date if you find one
-
-For documents that don't seem complete, you can ignore them - we'll pass in more text for the next time around.
-Your text will be loaded using Python's json.loads function so please ensure the output is bare json.
+- suggested_filename: A suggested filename for the document. 
+             Please add the most relevant date if you find one
 
 Example response:
 [
@@ -113,7 +111,7 @@ Example response:
         # Initialize output parser
         self.parser = JsonOutputParser()
     
-    def classify(self, text: str) -> [ClassificationResult]:
+    def classify(self, text: str) -> list[ClassificationResult]:
         """Classify a document.
         
         Args:

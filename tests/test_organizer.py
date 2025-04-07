@@ -279,4 +279,51 @@ def test_organize_document_with_existing_output():
             assert Path(result.output_path).exists()
             with open(result.output_path, 'rb') as f:
                 output_reader = PdfReader(f)
-                assert len(output_reader.pages) == 3 
+                assert len(output_reader.pages) == 3
+
+def test_organize_document_with_duplicate_filename():
+    """Test organizing a document with a duplicate filename."""
+    with tempfile.TemporaryDirectory() as input_dir, tempfile.TemporaryDirectory() as output_dir:
+        # Create a simple PDF file with 3 pages
+        pdf_path = Path(input_dir) / "test.pdf"
+        writer = PdfWriter()
+        for i in range(3):
+            writer.add_blank_page(width=612, height=792)  # Standard letter size
+        with open(pdf_path, 'wb') as f:
+            writer.write(f)
+        
+        # Open the PDF for reading
+        with open(pdf_path, 'rb') as f:
+            pdf_reader = PdfReader(f)
+            
+            organizer = DocumentOrganizer(Path(output_dir))
+            document_type = "Important Documents"
+            
+            # First document
+            organizer.organize_document(
+                pdf_reader=pdf_reader,
+                source_pdf_path=str(pdf_path),
+                start_page=1,
+                end_page=1,
+                document_type=document_type,
+                suggested_filename="test_doc.pdf"
+            )
+            
+            # Second document with same suggested filename
+            organizer.organize_document(
+                pdf_reader=pdf_reader,
+                source_pdf_path=str(pdf_path),
+                start_page=2,
+                end_page=2,
+                document_type=document_type,
+                suggested_filename="test_doc.pdf"
+            )
+            
+            # Verify both files exist with correct names
+            assert (Path(output_dir) / document_type / "test_doc.pdf").exists()
+            assert (Path(output_dir) / document_type / "test_doc_1.pdf").exists()
+            
+            # Verify metadata
+            assert len(organizer.metadata) == 2
+            assert organizer.metadata[0].filename == "test_doc.pdf"
+            assert organizer.metadata[1].filename == "test_doc_1.pdf" 

@@ -57,6 +57,30 @@ class DocumentOrganizer:
         """
         self.unprocessed_pages[source_pdf] = pages
     
+    def _get_unique_filename(self, category_dir: Path, base_filename: str) -> str:
+        """Generate a unique filename by appending a number if needed.
+        
+        Args:
+            category_dir: Directory where the file will be saved
+            base_filename: Base filename to use
+            
+        Returns:
+            Unique filename that doesn't exist in the directory
+        """
+        if not (category_dir / base_filename).exists():
+            return base_filename
+            
+        # Split filename into name and extension
+        name, ext = os.path.splitext(base_filename)
+        
+        # Try appending numbers until we find a unique filename
+        counter = 1
+        while True:
+            new_filename = f"{name}_{counter}{ext}"
+            if not (category_dir / new_filename).exists():
+                return new_filename
+            counter += 1
+
     def organize_document(
         self,
         pdf_reader: PdfReader,
@@ -103,14 +127,10 @@ class DocumentOrganizer:
         # Create output path in the appropriate category directory
         category_dir = self.output_dir / document_type
         category_dir.mkdir(exist_ok=True)
-        output_path = category_dir / output_filename
         
-        # Check for existing output file
-        if not dry_run and not self.overwrite and output_path.exists():
-            raise ValueError(
-                f"Output file already exists: {output_path}. "
-                "Use --overwrite to allow overwriting existing files."
-            )
+        # Get unique filename
+        output_filename = self._get_unique_filename(category_dir, output_filename)
+        output_path = category_dir / output_filename
         
         # Create output PDF
         pdf_writer = PdfWriter()
